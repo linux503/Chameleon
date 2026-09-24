@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chameleon — 专为多账号场景打造的指纹浏览器</title>
+  <meta name="description" content="Chameleon 指纹浏览器：独立环境、真实一致指纹、代理库与风险预检。Mac 优先。" />
+  <meta property="og:title" content="Chameleon" />
+  <meta property="og:description" content="专为多账号场景打造的指纹浏览器" />
+  <meta property="og:image" content="assets/screenshots/01-profiles.png" />
+  <meta name="theme-color" content="#0891b2" />
+  <link rel="icon" type="image/png" href="assets/brand/chameleon-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f5f9fc;
+      --ink: #0f1c2a;
+      --muted: #6b7c8f;
+      --line: #d5e3ef;
+      --brand: #0891b2;
+      --brand-2: #0ea5e9;
+      --brand-3: #22d3ee;
+      --lime: #38bdf8;
+      --card: #ffffff;
+      --shadow: 0 30px 70px rgba(6, 51, 47, 0.14);
+      --shadow-sm: 0 10px 28px rgba(6, 51, 47, 0.08);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Outfit, "Noto Sans SC", "PingFang SC", sans-serif;
+      background:
+        radial-gradient(1100px 620px at 12% -18%, rgba(14,165,233,.26), transparent 58%),
+        radial-gradient(900px 520px at 100% -4%, rgba(56,189,248,.16), transparent 52%),
+        radial-gradient(700px 400px at 50% 110%, rgba(8,145,178,.1), transparent 50%),
+        linear-gradient(180deg, #f7fbfe 0%, var(--bg) 42%, #e8f1f8 100%);
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { width: min(1140px, calc(100% - 40px)); margin: 0 auto; }
+
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      backdrop-filter: blur(16px) saturate(1.2);
+      background: rgba(247,252,250,.72);
+      border-bottom: 1px solid rgba(208,224,216,.75);
+    }
+    .nav-inner {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 68px; gap: 16px;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 11px;
+      font-weight: 750; letter-spacing: -.04em; font-size: 18px;
+    }
+    .brand img {
+      width: 36px; height: 36px; border-radius: 11px;
+      box-shadow: 0 8px 20px rgba(8,145,178,.18);
+    }
+    .nav-links {
+      display: flex; gap: 26px; color: var(--muted);
+      font-size: 14px; font-weight: 550;
+    }
+    .nav-links a { position: relative; }
+    .nav-links a:hover { color: var(--brand); }
+    .nav-links a::after {
+      content: ""; position: absolute; left: 0; right: 0; bottom: -6px; height: 2px;
+      border-radius: 99px; background: var(--brand-3); transform: scaleX(0);
+      transition: transform .2s ease;
+    }
+    .nav-links a:hover::after { transform: scaleX(1); }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border-radius: 999px; padding: 12px 20px; font: inherit; font-weight: 650; font-size: 14px;
+      border: 1px solid transparent; cursor: pointer; transition: .18s ease; letter-spacing: -.01em;
+    }
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, #0891b2 0%, #0ea5e9 55%, #22d3ee 120%);
+      box-shadow: 0 14px 32px rgba(8,145,178,.3);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 36px rgba(8,145,178,.36); }
+    .btn-ghost {
+      background: rgba(255,255,255,.78); border-color: var(--line); color: var(--ink);
+      box-shadow: 0 4px 14px rgba(15,55,85,.04);
+    }
+    .btn-ghost:hover { border-color: #9ecae9; color: var(--brand); }
+
+    .hero {
+      position: relative;
+      padding: 64px 0 36px;
+      display: grid;
+      gap: 34px;
+    }
+    .hero-top {
+      display: grid; grid-template-columns: 1.05fr .95fr; gap: 28px; align-items: end;
+    }
+    .hero-copy { animation: rise .7s cubic-bezier(.22,1,.36,1) both; }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 7px 12px; border-radius: 999px;
+      background: rgba(224,242,254,.9); border: 1px solid #bae6fd;
+      color: var(--brand); font-size: 12px; font-weight: 700; letter-spacing: .04em;
+      margin-bottom: 18px;
+    }
+    .eyebrow i {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--lime);
+      box-shadow: 0 0 0 4px rgba(56,189,248,.22);
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(46px, 7vw, 76px);
+      line-height: .94;
+      letter-spacing: -.055em;
+      font-weight: 800;
+      background: linear-gradient(120deg, #0f1c2a 18%, #0891b2 72%, #0284c7 125%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hero p {
+      margin: 18px 0 0;
+      font-size: 18px; line-height: 1.6; color: var(--muted); font-weight: 500;
+      max-width: 32em;
+    }
+    .hero-cta { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+    .hero-meta {
+      display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px;
+    }
+    .meta-chip {
+      padding: 8px 12px; border-radius: 999px; font-size: 12px; font-weight: 650;
+      color: #1e3a4c; background: rgba(255,255,255,.7); border: 1px solid var(--line);
+    }
+    .hero-panel {
+      position: relative;
+      border-radius: 28px;
+      padding: 22px;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.2), transparent 40%),
+        linear-gradient(160deg, #0c4a6e 0%, #0891b2 48%, #22d3ee 100%);
+      box-shadow: var(--shadow);
+      color: #e0f2fe;
+      animation: rise .75s .06s cubic-bezier(.22,1,.36,1) both;
+      min-height: 280px;
+      overflow: hidden;
+    }
+    .hero-panel::before {
+      content: ""; position: absolute; width: 220px; height: 220px; right: -60px; top: -70px;
+      border-radius: 50%; background: radial-gradient(circle, rgba(125,211,252,.35), transparent 70%);
+      animation: drift 10s ease-in-out infinite alternate;
+    }
+    .hero-panel > * { position: relative; z-index: 1; }
+    .hero-panel h2 {
+      margin: 0; font-size: 28px; letter-spacing: -.03em; font-weight: 750;
+    }
+    .hero-panel p { margin: 10px 0 0; opacity: .88; font-weight: 500; line-height: 1.5; }
+    .hero-stats {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 28px;
+    }
+    .hero-stat {
+      padding: 14px 12px; border-radius: 16px;
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16);
+      backdrop-filter: blur(8px);
+    }
+    .hero-stat strong { display: block; font-size: 22px; letter-spacing: -.03em; }
+    .hero-stat span { display: block; margin-top: 4px; font-size: 12px; opacity: .78; font-weight: 550; }
+
+    .hero-stage {
+      position: relative;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.75);
+      animation: rise .8s .1s cubic-bezier(.22,1,.36,1) both;
+    }
+    .hero-stage img { display: block; width: 100%; height: auto; }
+    .hero-glow {
+      position: absolute; inset: auto -8% -28% -8%; height: 50%;
+      background: radial-gradient(ellipse at center, rgba(14,165,233,.28), transparent 65%);
+      pointer-events: none; z-index: -1;
+    }
+
+    section { padding: 78px 0; }
+    .section-kicker {
+      font-size: 12px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+      color: var(--brand); margin: 0 0 12px;
+    }
+    .section-title {
+      margin: 0; font-size: clamp(30px, 4.2vw, 44px); letter-spacing: -.04em; font-weight: 750;
+    }
+    .section-sub {
+      margin: 14px 0 0; color: var(--muted); font-size: 16.5px; line-height: 1.6; max-width: 38em; font-weight: 500;
+    }
+
+    .features {
+      display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 16px; margin-top: 38px;
+    }
+    .feature {
+      background: rgba(255,255,255,.86);
+      border: 1px solid rgba(208,224,216,.95);
+      border-radius: 22px; padding: 24px 22px;
+      box-shadow: var(--shadow-sm);
+      transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    }
+    .feature:hover {
+      transform: translateY(-4px);
+      border-color: #7dd3fc;
+      box-shadow: 0 18px 40px rgba(15,55,85,.1);
+    }
+    .feature h3 { margin: 0 0 8px; font-size: 17px; letter-spacing: -.02em; }
+    .feature p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; font-weight: 500; }
+    .feature .ico {
+      width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center;
+      background: linear-gradient(145deg, #e0f2fe, #f0f9ff);
+      color: var(--brand); font-weight: 800; margin-bottom: 16px;
+      border: 1px solid #bae6fd; font-size: 13px;
+    }
+
+    .gallery { display: grid; gap: 18px; margin-top: 36px; }
+    .shot {
+      border-radius: 22px; overflow: hidden;
+      border: 1px solid rgba(208,224,216,.95);
+      box-shadow: var(--shadow);
+      background: #fff;
+      transition: transform .2s ease;
+    }
+    .shot:hover { transform: translateY(-2px); }
+    .shot img { display: block; width: 100%; height: auto; }
+    .shot figcaption {
+      padding: 15px 18px; font-size: 14px; color: var(--muted); font-weight: 550;
+      border-top: 1px solid #e6eef5; background: linear-gradient(180deg, #fbfdff, #f5f9fc);
+    }
+    .shot-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; }
+    .shot-stack { display: grid; gap: 16px; }
+
+    .palette {
+      margin-top: 36px;
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+    }
+    .swatch {
+      border-radius: 18px; padding: 18px 14px 14px; min-height: 110px;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      border: 1px solid rgba(255,255,255,.4);
+      box-shadow: var(--shadow-sm);
+      color: #fff; font-weight: 650; font-size: 12px;
+    }
+    .swatch span { opacity: .8; font-weight: 500; margin-top: 4px; }
+
+    .cta {
+      margin: 10px 0 88px;
+      border-radius: 30px; padding: 46px 40px;
+      color: #e0f2fe;
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.12), transparent 42%),
+        linear-gradient(155deg, #0c4a6e 0%, #0891b2 48%, #22d3ee 100%);
+      box-shadow: 0 32px 70px rgba(8,145,178,.3);
+      display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+      position: relative; overflow: hidden;
+    }
+    .cta::after {
+      content: ""; position: absolute; width: 260px; height: 260px; right: -40px; bottom: -80px;
+      border-radius: 50%; background: radial-gradient(circle, rgba(125,211,252,.28), transparent 70%);
+    }
+    .cta > * { position: relative; z-index: 1; }
+    .cta h2 { margin: 0; font-size: 32px; letter-spacing: -.035em; }
+    .cta p { margin: 10px 0 0; opacity: .88; font-weight: 500; max-width: 36em; }
+    .cta .btn-primary { background: #fff; color: #0891b2; box-shadow: 0 10px 24px rgba(0,0,0,.12); }
+    .cta .btn-ghost { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.28); color: #fff; }
+
+    footer {
+      padding: 28px 0 52px; color: var(--muted); font-size: 13px; font-weight: 500;
+      border-top: 1px solid rgba(208,224,216,.85);
+    }
+    footer .foot {
+      display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: center;
+    }
+    footer a:hover { color: var(--brand); }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes drift {
+      from { transform: translate(0,0); }
+      to { transform: translate(-16px, 10px); }
+    }
+    @media (max-width: 960px) {
+      .nav-links { display: none; }
+      .hero-top, .features, .shot-grid, .palette { grid-template-columns: 1fr; }
+      .hero-stats { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#">
+        <img src="assets/brand/chameleon-logo.png" width="36" height="36" alt="Chameleon" />
+        Chameleon
+      </a>
+      <nav class="nav-links">
+        <a href="#features">功能</a>
+        <a href="#system">色系</a>
+        <a href="#gallery">截图</a>
+        <a href="#download">获取</a>
+      </nav>
+      <a class="btn btn-primary" href="#download">获取软件</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero wrap">
+      <div class="hero-glow"></div>
+      <div class="hero-top">
+        <div class="hero-copy">
+          <div class="eyebrow"><i></i> macOS · Fingerprint Browser</div>
+          <h1>Chameleon</h1>
+          <p>专为多账号场景打造的指纹浏览器。独立环境、真实一致指纹、代理库与风险预检，整套青蓝色产品语言贯穿 App 与官网。</p>
+          <div class="hero-cta">
+            <a class="btn btn-primary" href="#download">获取 macOS 版本</a>
+            <a class="btn btn-ghost" href="#gallery">查看产品界面</a>
+          </div>
+          <div class="hero-meta">
+            <span class="meta-chip">Apple Silicon / Intel</span>
+            <span class="meta-chip">Local API</span>
+            <span class="meta-chip">风险预检</span>
+          </div>
+        </div>
+        <aside class="hero-panel">
+          <h2>清爽色系，两端统一</h2>
+          <p>品牌青蓝贯穿桌面端按钮、侧栏、启动页与本官网，减少割裂感，提升专业度。</p>
+          <div class="hero-stats">
+            <div class="hero-stat"><strong>Cyan</strong><span>主色 #0891B2</span></div>
+            <div class="hero-stat"><strong>Sky</strong><span>辅助 #22D3EE</span></div>
+            <div class="hero-stat"><strong>Ice</strong><span>点缀 #38BDF8</span></div>
+          </div>
+        </aside>
+      </div>
+      <figure class="hero-stage">
+        <img src="assets/screenshots/01-profiles.png" alt="Chameleon 环境管理界面" width="1440" height="900" />
+      </figure>
+    </section>
+
+    <section id="features" class="wrap">
+      <p class="section-kicker">Product</p>
+      <h2 class="section-title">多开账号的一整套工作台</h2>
+      <p class="section-sub">从环境隔离、代理出口到指纹一致性与启动自检，把日常多账号操作收敛到一个桌面端。</p>
+      <div class="features">
+        <article class="feature"><div class="ico">01</div><h3>独立环境多开</h3><p>每个环境独立 Profile，分组、批量创建、回收站，打开即用。</p></article>
+        <article class="feature"><div class="ico">02</div><h3>真实一致指纹</h3><p>UA / OS / 屏幕 / WebGL / 硬件相互匹配，侧栏一致性概览可一键换指纹。</p></article>
+        <article class="feature"><div class="ico">03</div><h3>代理与出口检测</h3><p>代理库批量粘贴导入，出口 IP、时区联动，降低环境与出口错配。</p></article>
+        <article class="feature"><div class="ico">04</div><h3>风险预检</h3><p>对照环境 / 关联 / 行为三层线索，开跑前先看风险提示。</p></article>
+        <article class="feature"><div class="ico">05</div><h3>启动页自检</h3><p>打开环境后自动展示出口 IP、配置与实时指纹对照。</p></article>
+        <article class="feature"><div class="ico">06</div><h3>Local API</h3><p>本地接口可对接 RPA / Playwright，适合批量与自动化流水线。</p></article>
+      </div>
+    </section>
+
+    <section id="system" class="wrap">
+      <p class="section-kicker">Design System</p>
+      <h2 class="section-title">产品色系</h2>
+      <p class="section-sub">以变色龙青蓝为主轴，搭配薄荷绿与柠绿点缀，按钮采用渐变与轻阴影，整体更偏高级桌面产品。</p>
+      <div class="palette">
+        <div class="swatch" style="background:linear-gradient(160deg,#0891b2,#0ea5e9)"><b>Brand</b><span>#0891B2</span></div>
+        <div class="swatch" style="background:linear-gradient(160deg,#0ea5e9,#22d3ee)"><b>Accent</b><span>#22D3EE</span></div>
+        <div class="swatch" style="background:linear-gradient(160deg,#0284c7,#38bdf8)"><b>Sky</b><span>#38BDF8</span></div>
+        <div class="swatch" style="background:linear-gradient(160deg,#0f1c2a,#1e3a4c)"><b>Ink</b><span>#0F1C2A</span></div>
+        <div class="swatch" style="background:linear-gradient(160deg,#e7f2ed,#f5f9fc);color:#0f1c2a;border-color:#d5e3ef"><b>Surface</b><span>#F5F9FC</span></div>
+      </div>
+    </section>
+
+    <section id="gallery" class="wrap">
+      <p class="section-kicker">Screenshots</p>
+      <h2 class="section-title">软件截图</h2>
+      <p class="section-sub">真实界面，不是概念图。</p>
+      <div class="gallery">
+        <div class="shot-grid">
+          <figure class="shot">
+            <img src="assets/screenshots/04-create-profile.png" alt="新建环境与指纹概览" width="1440" height="900" loading="lazy" />
+            <figcaption>新建环境 · 指纹概览与一致性评分</figcaption>
+          </figure>
+          <div class="shot-stack">
+            <figure class="shot">
+              <img src="assets/screenshots/02-groups.png" alt="分组管理" width="1440" height="900" loading="lazy" />
+              <figcaption>分组管理</figcaption>
+            </figure>
+            <figure class="shot">
+              <img src="assets/screenshots/03-proxies.png" alt="代理管理" width="1440" height="900" loading="lazy" />
+              <figcaption>代理库 · 粘贴导入与测活</figcaption>
+            </figure>
+          </div>
+        </div>
+        <figure class="shot">
+          <img src="assets/screenshots/06-start-page.png" alt="环境启动页" width="1440" height="900" loading="lazy" />
+          <figcaption>环境启动页 · 出口 IP 与指纹自检</figcaption>
+        </figure>
+        <figure class="shot">
+          <img src="assets/screenshots/05-fingerprint.png" alt="指纹设置" width="1440" height="900" loading="lazy" />
+          <figcaption>指纹设置 · WebRTC / 地理 / 噪声防护</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section id="download" class="wrap">
+      <div class="cta">
+        <div>
+          <h2>获取 Chameleon</h2>
+          <p>v0.2.0 Universal DMG，同时支持 Apple Silicon（M 系列）与 Intel。源码不公开。</p>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a class="btn btn-primary" href="https://github.com/linux503/Chameleon/releases/download/v0.2.0/Chameleon-0.2.0-mac-universal.dmg" target="_blank" rel="noreferrer">下载 v0.2.0 DMG</a>
+          <a class="btn btn-ghost" href="https://github.com/linux503/Chameleon/releases/tag/v0.2.0" target="_blank" rel="noreferrer">Release 说明</a>
+          <a class="btn btn-ghost" href="https://github.com/linux503/Chameleon/issues/new" target="_blank" rel="noreferrer">商务 / 支持</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot">
+      <span>© 2026 Chameleon · 源码未开源</span>
+      <span><a href="https://github.com/linux503/Chameleon">GitHub</a></span>
+    </div>
+  </footer>
+</body>
+</html>

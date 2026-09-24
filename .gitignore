@@ -1,0 +1,9 @@
+# 本仓库仅包含官网与产品介绍素材，不含应用程序源码。
+*
+!README.md
+!LICENSE
+!index.html
+!.nojekyll
+!.gitignore
+!assets/
+!assets/**
